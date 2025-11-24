@@ -2,17 +2,15 @@
 
 layout(location = 0) in vec2 v_UV;
 layout(location = 1) in float v_Light;
+layout(location = 2) in flat uint v_TexID;
+
+layout(set = 2, binding = 0) uniform sampler2DArray u_Textures;
 
 layout(location = 0) out vec4 out_Color;
 
 void main() {
-    // Debug: UV Grid
-    vec3 base_color = vec3(0.5, 0.8, 0.5); // Grassy Green
+    vec4 tex_color = texture(u_Textures, vec3(v_UV, float(v_TexID)));
+    if (tex_color.a < 0.1) discard;
 
-    // Create a little frame around the block
-    if (v_UV.x < 0.05 || v_UV.x > 0.95 || v_UV.y < 0.05 || v_UV.y > 0.95) {
-        base_color = vec3(0.3, 0.6, 0.3);
-    }
-
-    out_Color = vec4(base_color * v_Light, 1.0);
+    out_Color = vec4(tex_color.rgb * v_Light, tex_color.a);
 }

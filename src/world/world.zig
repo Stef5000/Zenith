@@ -44,12 +44,30 @@ pub const World = struct {
         const global_pos = coord.BlockPos.new(x, y, z);
         const chunk_pos = coord.worldToChunk(global_pos);
         const local_pos = coord.worldToLocal(global_pos);
-
         if (self.getChunk(chunk_pos)) |chunk| {
             chunk.setBlock(local_pos.x(), local_pos.y(), local_pos.z(), block);
         } else {
-            const new_chunk = try self.createChunk(chunk_pos);
-            new_chunk.setBlock(local_pos.x(), local_pos.y(), local_pos.z(), block);
+            return;
+        }
+
+        const lx = local_pos.x();
+        const ly = local_pos.y();
+        const lz = local_pos.z();
+        // Check X Neighbors
+        if (lx == 0) try self.dirtifyChunk(chunk_pos.x() - 1, chunk_pos.y(), chunk_pos.z());
+        if (lx == 31) try self.dirtifyChunk(chunk_pos.x() + 1, chunk_pos.y(), chunk_pos.z());
+        // Check Y Neighbors
+        if (ly == 0) try self.dirtifyChunk(chunk_pos.x(), chunk_pos.y() - 1, chunk_pos.z());
+        if (ly == 31) try self.dirtifyChunk(chunk_pos.x(), chunk_pos.y() + 1, chunk_pos.z());
+        // Check Z Neighbors
+        if (lz == 0) try self.dirtifyChunk(chunk_pos.x(), chunk_pos.y(), chunk_pos.z() - 1);
+        if (lz == 31) try self.dirtifyChunk(chunk_pos.x(), chunk_pos.y(), chunk_pos.z() + 1);
+    }
+
+    fn dirtifyChunk(self: *World, cx: i32, cy: i32, cz: i32) !void {
+        const pos = coord.ChunkPos.new(cx, cy, cz);
+        if (self.getChunk(pos)) |chunk| {
+            chunk.is_dirty = true;
         }
     }
 };

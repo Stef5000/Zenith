@@ -15,7 +15,7 @@ pub const App = struct {
             return error.SdlInitFailed;
         }
 
-        const window = c.SDL_CreateWindow("Zenith", 1280, 720, c.SDL_WINDOW_RESIZABLE) orelse {
+        const window = c.SDL_CreateWindow("Zenith", 1270, 720, c.SDL_WINDOW_RESIZABLE | c.SDL_WINDOW_FULLSCREEN) orelse {
             c.SDL_Log("Window Init Failed: %s", c.SDL_GetError());
             return error.WindowInitFailed;
         };

@@ -1,12 +1,5 @@
 const std = @import("std");
 const math = @import("../math/math.zig");
-const Input = @import("input.zig").Input;
-const c = @import("../c.zig").c;
-
-const YAW_DEFAULT: f32 = -90.0;
-const PITCH_DEFAULT: f32 = 0.0;
-const SPEED_DEFAULT: f32 = 5.0;
-const SENSITIVITY: f32 = 0.05;
 
 pub const Camera = struct {
     position: math.Vec3,
@@ -25,8 +18,8 @@ pub const Camera = struct {
             .front = math.Vec3.new(0, 0, -1),
             .up = math.Vec3.new(0, 1, 0),
             .right = math.Vec3.new(1, 0, 0),
-            .yaw = YAW_DEFAULT,
-            .pitch = PITCH_DEFAULT,
+            .yaw = -90.0,
+            .pitch = 0.0,
         };
         cam.updateVectors();
         return cam;
@@ -37,37 +30,27 @@ pub const Camera = struct {
         return math.Mat4.lookAt(self.position, target, self.up);
     }
 
-    pub fn update(self: *Camera, input: *Input, dt: f32) void {
-        const x_offset = input.mouse_delta_x * SENSITIVITY;
-        const y_offset = input.mouse_delta_y * SENSITIVITY;
-        self.yaw += x_offset;
-        self.pitch -= y_offset;
+    pub fn handleMouse(self: *Camera, dx: f32, dy: f32) void {
+        const sensitivity = 0.04;
+        self.yaw += dx * sensitivity;
+        self.pitch -= dy * sensitivity;
 
-        if (self.pitch > 85.0) self.pitch = 85.0;
-        if (self.pitch < -85.0) self.pitch = -85.0;
+        if (self.pitch > 89.0) self.pitch = 89.0;
+        if (self.pitch < -89.0) self.pitch = -89.0;
+
         self.updateVectors();
-        const velocity = SPEED_DEFAULT * dt;
-
-        if (input.isKeyDown(c.SDL_SCANCODE_W)) self.position = self.position.add(self.front.scale(velocity));
-        if (input.isKeyDown(c.SDL_SCANCODE_S)) self.position = self.position.sub(self.front.scale(velocity));
-        if (input.isKeyDown(c.SDL_SCANCODE_A)) self.position = self.position.sub(self.right.scale(velocity));
-        if (input.isKeyDown(c.SDL_SCANCODE_D)) self.position = self.position.add(self.right.scale(velocity));
-        if (input.isKeyDown(c.SDL_SCANCODE_SPACE)) self.position = self.position.add(self.world_up.scale(velocity));
-        if (input.isKeyDown(c.SDL_SCANCODE_LCTRL)) self.position = self.position.sub(self.world_up.scale(velocity));
     }
 
     fn updateVectors(self: *Camera) void {
-        // Calculate the new Front vector
+        const rad_yaw = math.toRadians(self.yaw);
+        const rad_pitch = math.toRadians(self.pitch);
+
         var new_front = math.Vec3.new(
-            @cos(math.toRadians(self.yaw)) * @cos(math.toRadians(self.pitch)),
-            @sin(math.toRadians(self.pitch)),
-            @sin(math.toRadians(self.yaw)) * @cos(math.toRadians(self.pitch)),
+            @cos(rad_yaw) * @cos(rad_pitch),
+            @sin(rad_pitch),
+            @sin(rad_yaw) * @cos(rad_pitch),
         );
-
         self.front = new_front.norm();
-
-        // Recalculate Right and Up vectors
-        // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         self.right = self.front.cross(self.world_up).norm();
         self.up = self.right.cross(self.front).norm();
     }

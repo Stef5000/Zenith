@@ -5,6 +5,7 @@ pub const Input = struct {
     keyboard: [*]const bool,
     mouse_delta_x: f32,
     mouse_delta_y: f32,
+    mouse_buttons: u32,
 
     pub fn init(window: *c.SDL_Window) Input {
         _ = c.SDL_SetWindowRelativeMouseMode(window, true);
@@ -15,6 +16,7 @@ pub const Input = struct {
             .keyboard = keys,
             .mouse_delta_x = 0,
             .mouse_delta_y = 0,
+            .mouse_buttons = 0,
         };
     }
 
@@ -24,13 +26,29 @@ pub const Input = struct {
     }
 
     pub fn handleEvent(self: *Input, event: *c.SDL_Event) void {
-        if (event.type == c.SDL_EVENT_MOUSE_MOTION) {
-            self.mouse_delta_x += event.motion.xrel;
-            self.mouse_delta_y += event.motion.yrel;
+        switch (event.type) {
+            c.SDL_EVENT_MOUSE_MOTION => {
+                self.mouse_delta_x += event.motion.xrel;
+                self.mouse_delta_y += event.motion.yrel;
+            },
+            c.SDL_EVENT_MOUSE_BUTTON_DOWN => {
+                const mask = @as(u32, 1) << @as(u5, @intCast(event.button.button - 1));
+                self.mouse_buttons |= mask;
+            },
+            c.SDL_EVENT_MOUSE_BUTTON_UP => {
+                const mask = @as(u32, 1) << @as(u5, @intCast(event.button.button - 1));
+                self.mouse_buttons &= ~mask;
+            },
+            else => {},
         }
     }
 
     pub fn isKeyDown(self: Input, scancode: u32) bool {
         return self.keyboard[scancode];
+    }
+
+    pub fn isMouseButtonDown(self: Input, button: u32) bool {
+        const mask = @as(u32, 1) << @as(u5, @intCast(button - 1));
+        return (self.mouse_buttons & mask) != 0;
     }
 };

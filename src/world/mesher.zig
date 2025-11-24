@@ -26,9 +26,12 @@ pub const MeshData = std.ArrayList(u32);
 pub fn generateMesh(allocator: std.mem.Allocator, world: *const World, chunk_pos: coord.ChunkPos) !MeshData {
     var buffer = MeshData.empty;
     errdefer buffer.deinit(allocator);
-
     const chunk = world.getChunk(chunk_pos) orelse return buffer;
-
+    chunk.lock.lockShared();
+    defer chunk.lock.unlockShared();
+    if (chunk.solid_count == 0) {
+        return buffer;
+    }
     var neighbor_chunks: [6]?*chunk_mod.Chunk = undefined;
     inline for (FACES, 0..) |dir, i| {
         const n_pos = chunk_pos.add(coord.ChunkPos.new(dir.x, dir.y, dir.z));
@@ -69,7 +72,7 @@ pub fn generateMesh(allocator: std.mem.Allocator, world: *const World, chunk_pos
                         }
                     }
                     if (!is_solid) {
-                        try addFace(allocator, &buffer, x, y, z, @intCast(face_idx), block_id);
+                        try addFace(allocator, &buffer, x, y, z, @intCast(face_idx), block_id - 1);
                     }
                 }
             }
@@ -105,7 +108,6 @@ fn addFace(allocator: std.mem.Allocator, buffer: *MeshData, x: i32, y: i32, z: i
         const uv = uv_ids[i];
 
         var data: u32 = 0;
-        // MASK CHANGED TO 0x3F (63) to allow value '32'
         data |= (@as(u32, @intCast(vx)) & 0x3F) << SHIFT_X;
         data |= (@as(u32, @intCast(vy)) & 0x3F) << SHIFT_Y;
         data |= (@as(u32, @intCast(vz)) & 0x3F) << SHIFT_Z;
