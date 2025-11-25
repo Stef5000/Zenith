@@ -1,1 +1,4 @@
-Zenith the ultimately fast voxel exploration combat hyper mulittasking evaluating action rpg on the marketo of this fucking planeto.
+- WASD Movement
+- Left Click = Break Blocks, Right Click Set Blocks
+- 1,2,3 to select placing block
+- F1 for Flight Mode and F2 for Ground Mode
