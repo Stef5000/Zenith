@@ -42,8 +42,6 @@ pub const ChunkManager = struct {
         var it = world.chunks.iterator();
         while (it.next()) |entry| {
             const chunk = entry.value_ptr.*;
-
-            // Load acquire to check status
             if (chunk.is_dirty and !chunk.is_meshing.load(.acquire)) {
                 chunk.is_meshing.store(true, .release);
                 try self.pool.spawn(meshWorker, .{ self, world, entry.key_ptr.* });

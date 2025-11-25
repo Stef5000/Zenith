@@ -1,11 +1,11 @@
-const std = @import("std");
 const math = @import("../math/math.zig");
+const c = @import("../c.zig").c;
+const coords = @import("../world/coord.zig");
+const aabb_utils = @import("../math/aabb.zig");
 const Camera = @import("../engine/camera.zig").Camera;
 const World = @import("../world/world.zig").World;
 const Input = @import("../engine/input.zig").Input;
-const c = @import("../c.zig").c;
 const AABB = @import("../math/aabb.zig").AABB;
-const aabb_utils = @import("../math/aabb.zig");
 
 const GRAVITY: f32 = 28.0;
 const JUMP_FORCE: f32 = 9.0;
@@ -37,18 +37,11 @@ pub const Player = struct {
     }
 
     pub fn update(self: *Player, dt: f32, input: *Input, world: *const World) void {
-        if (input.isKeyDown(c.SDL_SCANCODE_F)) {
-            self.mode = if (self.mode == .Walking) .Flying else .Walking;
-            self.velocity = math.Vec3.zero();
-        }
+        if (input.isKeyDown(c.SDL_SCANCODE_F1)) self.mode = .Flying else if (input.isKeyDown(c.SDL_SCANCODE_F2)) self.mode = .Walking;
 
         self.camera.handleMouse(input.mouse_delta_x, input.mouse_delta_y);
 
-        if (self.mode == .Flying) {
-            self.updateFlying(dt, input);
-        } else {
-            self.updateWalking(dt, input, world);
-        }
+        if (self.mode == .Flying) self.updateFlying(dt, input) else self.updateWalking(dt, input, world);
 
         const eye_pos = self.position.add(math.Vec3.new(0, EYE_HEIGHT, 0));
         self.camera.position = eye_pos;
@@ -160,7 +153,6 @@ pub const Player = struct {
     }
 
     fn isSolid(world: *const World, x: i32, y: i32, z: i32) bool {
-        const coords = @import("../world/coord.zig");
         const global_pos = coords.BlockPos.new(x, y, z);
         const chunk_pos = coords.worldToChunk(global_pos);
         const local_pos = coords.worldToLocal(global_pos);

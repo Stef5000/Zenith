@@ -22,24 +22,17 @@ pub const Game = struct {
     pub fn init(allocator: std.mem.Allocator, gfx: *GfxContext) !*Game {
         const self = try allocator.create(Game);
         self.allocator = allocator;
-        self.player = Player.init(math.Vec3.new(0, 50, 0));
+        self.player = Player.init(math.Vec3.new(0, 100, 0));
         self.player.camera.pitch = -45.0;
         self.world = World.init(allocator);
         self.chunk_manager = ChunkManager.init(allocator);
         try self.chunk_manager.start();
-
-        const paths = [_][]const u8{
-            "assets/block_textures/dirt.bmp",
-            "assets/block_textures/stone.bmp",
-            "assets/block_textures/gras.bmp",
-        };
-
+        const paths = [_][]const u8{ "assets/block_textures/dirt.bmp", "assets/block_textures/stone.bmp", "assets/block_textures/gras.bmp" };
         const tex_data = try tex_loader.loadTextures(allocator, &paths);
         try gfx.createTextureArray(tex_data);
         var mut_data = tex_data;
         mut_data.deinit(allocator);
-
-        try create_terrain(self);
+        try self.world.generateTerrain();
         return self;
     }
 
@@ -56,7 +49,6 @@ pub const Game = struct {
         if (input.isKeyDown(c.SDL_SCANCODE_2)) self.selected_block = 2; // Grass
         if (input.isKeyDown(c.SDL_SCANCODE_3)) self.selected_block = 3; // Dirt
 
-        // --- INTERACTION ---
         if (self.mouse_cooldown > 0) {
             self.mouse_cooldown -= dt;
         } else {
@@ -90,37 +82,3 @@ pub const Game = struct {
         try gfx.renderChunks(view_proj, &self.world);
     }
 };
-fn create_terrain(self: *Game) !void {
-    const RADIUS = 4;
-    var cx: i32 = -RADIUS;
-    while (cx <= RADIUS) : (cx += 1) {
-        var cy: i32 = 0;
-        while (cy <= RADIUS) : (cy += 1) {
-            var cz: i32 = -RADIUS;
-            while (cz <= RADIUS) : (cz += 1) {
-                const cpos = math.Vec3_i32.new(cx, cy, cz);
-                const chunk = try self.world.createChunk(cpos);
-                var bx: i32 = 0;
-                while (bx < 32) : (bx += 1) {
-                    var bz: i32 = 0;
-                    while (bz < 32) : (bz += 1) {
-                        const fx = @as(f32, @floatFromInt(cx * 32 + bx));
-                        const fz = @as(f32, @floatFromInt(cz * 32 + bz));
-                        const height = @as(i32, @intFromFloat(16.0 + 10.0 * @sin(fx * 0.1) * @sin(fz * 0.1)));
-
-                        var by: i32 = 0;
-                        while (by < 32) : (by += 1) {
-                            const world_y = cy * 32 + by;
-                            if (world_y < height) {
-                                chunk.setBlock(bx, by, bz, 1); // Stone
-                            } else if (world_y == height) {
-                                chunk.setBlock(bx, by, bz, 3); // Grass
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    std.log.info("Generated World with {} chunks", .{self.world.chunks.count()});
-}
